@@ -28,7 +28,7 @@ const float PI = 3.141592653; //Pi to 10 digits
   //Booleans for settings
   bool caseStartSel = false;
   bool palletStartSel = false;
-  bool twoCubeMode = true;
+  bool twoCaseMode = true;
   bool showStats = true;
   bool autoParameters = true;
 
