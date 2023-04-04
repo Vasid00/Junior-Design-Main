@@ -4,8 +4,8 @@
 
 //Constants
 //Change these to the actual values
-#define SERVO_OPEN   30
-#define SERVO_CLOSED 60
+#define SERVO_OPEN   0     //ask chris
+#define SERVO_CLOSED 6
 
 //Global setup
 Servo gripper; //Class declaration
@@ -24,18 +24,17 @@ void loop(){
   //Servo
     if(moveServo)
     {
-      //ADD CODE FOR MOVING SERVO
-      //close servo
       if(servoState) 
       {
         gripper.write(SERVO_CLOSED);
         servoState = false;
       }
-      //open servo
       else
       {
         gripper.write(SERVO_OPEN);
         servoState = true;
       }
+      moveServo = false;
+      delay(15);
     }
 };
