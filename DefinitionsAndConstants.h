@@ -3,6 +3,9 @@
 //This file is a header for constants and definitions
 
 //TFT Colors
+#ifndef DefinitionsAndConstants_h
+#define DefinitionsAndConstants_h
+
 #define BLACK 0x0000
 #define WHITE 0xFFFF
 
@@ -99,3 +102,5 @@ const int LCD_SPI_MISO = 49;
 const int LCD_SPI_MOSI = 50;
 const int LCD_SPI_CLK = 51;
 const int LCD_SC_CS = 52;
+
+#endif
