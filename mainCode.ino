@@ -54,9 +54,11 @@ const float PI = 3.141592653; //Pi to 10 digits
   //Bottom left of case
   double caseStart_H = 0;
   double caseStart_V = 0;
+
   //Bottom left of pallet
   double palletStart_H = 0;
   double palletStart_V = 0;
+
   //Booleans for settings
   bool caseStartSel = false;
   bool palletStartSel = false;
@@ -65,11 +67,11 @@ const float PI = 3.141592653; //Pi to 10 digits
   bool autoParameters = true;
 
 /************************************************************ DPAD ************************************************************/
-  int button5 = 2;
-  int button4 = 3;
-  int button3 = 4;
-  int button2 = 5;
-  int button1 = 6;
+  const int button5 = 2;
+  const int button4 = 3;
+  const int button3 = 4;
+  const int button2 = 5;
+  const int button1 = 6;
 
   int buttonState1, buttonState2, buttonState3, buttonState4, buttonState5;
 
@@ -77,7 +79,7 @@ const float PI = 3.141592653; //Pi to 10 digits
 
   Servo gripper;
 
-  int servoSignal = 7;
+  const int servoSignal = 7;
   int servoAngle = 0;
 
   bool moveServo, servoState; //servoState true = open, false = closed
@@ -85,12 +87,12 @@ const float PI = 3.141592653; //Pi to 10 digits
 
 /************************************************************ STEPPER ************************************************************/
 
-  int zDriver_En = 8;
-  int zDriver_Dir = 9;
-  int zDriver_Step = 10;
-  int yDriver_En = 11;
-  int yDriver_Dir = 12;
-  int yDriver_Step = 13;
+  const int zDriver_En = 8;
+  const int zDriver_Dir = 9;
+  const int zDriver_Step = 10;
+  const int yDriver_En = 11;
+  const int yDriver_Dir = 12;
+  const int yDriver_Step = 13;
 
   int zMotorSteps, yMotorSteps;
 
@@ -106,10 +108,10 @@ const float PI = 3.141592653; //Pi to 10 digits
 
 
 /************************************************************ TOF ************************************************************/
-  int zTof_SCL = 18;
-  int zTof_SDA = 19;
-  int yTof_SCL = 20;
-  int yTof_SDA = 21;
+  const int zTof_SCL = 18;
+  const int zTof_SDA = 19;
+  const int yTof_SCL = 20;
+  const int yTof_SDA = 21;
 
 
 
@@ -658,37 +660,37 @@ const float PI = 3.141592653; //Pi to 10 digits
   };
 
   //Pin values
-  int LCD_DB8 = 22;
-  int LCD_DB9 = 23;
-  int LCD_DB10 = 24;
-  int LCD_DB11 = 25;
-  int LCD_DB12 = 26;
-  int LCD_DB13 = 27;
-  int LCD_DB14 = 28;
-  int LCD_DB15 = 29;
-  int LCD_DB7 = 30;
-  int LCD_DB6 = 31;
-  int LCD_DB5 = 32;
-  int LCD_DB4 = 33;
-  int LCD_DB3 = 34;
-  int LCD_DB2 = 35;
-  int LCD_DB1 = 36;
-  int LCD_DB0 = 37;
-  int LCD_LCDRS = 38;
-  int LCD_LCDWR = 39;
-  int LCD_LCDCS = 40;
-  int LCD_LCDRST = 41;
-  int LCD_NC0 = 42;
-  int LCD_NC6 = 43;
-  int LCD_FLASHCS = 44;
-  int LCD_NC4 = 45;
-  int LCD_NC1 = 46;
-  int LCD_NC3 = 47;
-  int LCD_NC2 = 48;
-  int LCD_SPI_MISO = 49;
-  int LCD_SPI_MOSI = 50;
-  int LCD_SPI_CLK = 51;
-  int LCD_SC_CS = 52;
+  const int LCD_DB8 = 22;
+  const int LCD_DB9 = 23;
+  const int LCD_DB10 = 24;
+  const int LCD_DB11 = 25;
+  const int LCD_DB12 = 26;
+  const int LCD_DB13 = 27;
+  const int LCD_DB14 = 28;
+  const int LCD_DB15 = 29;
+  const int LCD_DB7 = 30;
+  const int LCD_DB6 = 31;
+  const int LCD_DB5 = 32;
+  const int LCD_DB4 = 33;
+  const int LCD_DB3 = 34;
+  const int LCD_DB2 = 35;
+  const int LCD_DB1 = 36;
+  const int LCD_DB0 = 37;
+  const int LCD_LCDRS = 38;
+  const int LCD_LCDWR = 39;
+  const int LCD_LCDCS = 40;
+  const int LCD_LCDRST = 41;
+  const int LCD_NC0 = 42;
+  const int LCD_NC6 = 43;
+  const int LCD_FLASHCS = 44;
+  const int LCD_NC4 = 45;
+  const int LCD_NC1 = 46;
+  const int LCD_NC3 = 47;
+  const int LCD_NC2 = 48;
+  const int LCD_SPI_MISO = 49;
+  const int LCD_SPI_MOSI = 50;
+  const int LCD_SPI_CLK = 51;
+  const int LCD_SC_CS = 52;
 
 //
 void setup() {
