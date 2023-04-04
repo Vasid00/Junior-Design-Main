@@ -47,7 +47,7 @@ void dispSelect(int *selCur, int *state, bool *caseStartSel, bool *palletStartSe
 
 //**********
 //Name
-//  
+//  dispMoveRight
 //Purpose
 //  
 //Parameters
@@ -56,4 +56,15 @@ void dispSelect(int *selCur, int *state, bool *caseStartSel, bool *palletStartSe
 //  
 //**********
 
+
+//**********
+//Name
+//  
+//Purpose
+//  
+//Parameters
+//  
+//Returns
+//  
+//**********
 #endif
