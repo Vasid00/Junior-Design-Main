@@ -2,3 +2,40 @@
 
 #include <Adafruit_VL53L0X.h> // Y sensor library
 #include <Adafruit_VL6180X.h> // Z sensor library
+#include <Wire.h>
+
+Adafruit_VL53L0X tofY = Adafruit_VL53L0X();
+Adafruit_VL6180X tofZ = Adafruit_VL6180X();
+
+void setup() {
+  Serial.begin(9600); //number for ardunio setup
+  while (!Serial)     // makes sure TOFs connected
+  {
+  delay(1);
+  }
+  
+  Serial.println("TOF Sensors testing.");   //test if sensors are connected
+  if (!tofY.begin())                        //kills code if both are not detected
+  {
+    Serial.println(F("Failed to find VL53L0X (YMV)"));
+    while(1);
+  }
+  if (!tofZ.begin())
+  {
+    Serial.println(F("Failed to find VL6180X (ZMV)"));
+    while(1);
+  }
+  
+  // testing start
+  Serial.println(F("TOF Testing Start:\n\n"));
+
+  // start continuous ranging
+  tofY.startRangeContinuous();
+}
+
+void loop() {
+  if (tofY.isRangeComplete()) {
+    Serial.print("Distance in Y-direction in mm: ");
+    Serial.println(tofY.readRange());
+  }
+}
