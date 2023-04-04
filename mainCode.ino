@@ -13,9 +13,6 @@
 #include <Servo.h> //for Servo
 #include "DefinitionsAndConstants.h" //Custom Lib for pin definitions and constant values
 
-const float DEG_TO_RAD_CONSTANT = 57.2957795131; //conversion standard from deg to rad
-const float PI = 3.141592653; //Pi to 10 digits
-
 //GLOBAL VARIABLES
   //Bottom left of case
   double caseStart_H = 0;
