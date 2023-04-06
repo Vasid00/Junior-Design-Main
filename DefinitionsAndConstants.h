@@ -47,11 +47,11 @@ const float DEG_TO_RAD_CONSTANT = 57.2957795131; //conversion standard from deg 
 const float PI = 3.141592653; //Pi to 10 digits
 
 //Controls button pin values
-const int button5 = 2;
-const int button4 = 3;
-const int button3 = 4;
-const int button2 = 5;
-const int button1 = 6;
+const int BUTTON_5 = 2;
+const int BUTTON_4 = 3;
+const int BUTTON_3 = 4;
+const int BUTTON_2 = 5;
+const int BUTTON_1 = 6;
 
 //Servo pin value
 const int servoSignal = 7;
