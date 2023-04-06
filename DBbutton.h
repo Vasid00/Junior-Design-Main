@@ -6,7 +6,8 @@ class DBbutton{
     DBbutton(int pinIn);
     
     void changePin(int pinIn);
-    bool isPressed();
+    void changeState(bool stateIn);
+    bool grabState();
     int grabPin();
   
   private:
