@@ -43,7 +43,7 @@ void setup(){
 
 void loop() {
   float zDist = tofZ.readLux(VL6180X_ALS_GAIN_5);   // Z setup code
-  Serial.print("zDist: "); 
+  Serial.print("zDist: ");                          // FIXME/TESTME: see what Lux is (also in TOF testing)
   Serial.println(zDist);
   uint8_t range = tofZ.readRange();
   uint8_t status = tofZ.readRangeStatus();
@@ -51,5 +51,40 @@ void loop() {
   if (status == VL6180X_ERROR_NONE) {          // detect and give Z distance
     Serial.print(""Distance in Z: ");
     Serial.println(range);
+    //read the value of the emergency stop pin
+  buttonState = digitalRead(stopPin);
+  
+  //FIXME: implement stepper to work with tof
+  
+  //Emergency stop clause
+  if(buttonState==HIGH)
+  {
+    //Emergency stop serial monitor
+    if(notStopped){
+      //Print to serial monitor
+      Serial.println();
+      Serial.println("System Stopped.");
+    }
+    notStopped = false; //change bool flag
+  }
+  //If emergency stop has not been pressed
+  
+  //Two types of stepper control, comment out the one you want to use
+  if(notStopped)
+  {
+    /* Library-based stepper control for z-motor
+    z_testMotor.setCurrentPosition(0);
+    z_testMotor.setSpeed(200);
+    z_testMotor.runSpeed();
+    if(z_testMotor.currentPosition() >= 400)
+    {
+      delay(10);
+      z_testMotor.setCurrentPosition(0);
+    }
+    */
+    
+    
+    
+    
   }
 };
