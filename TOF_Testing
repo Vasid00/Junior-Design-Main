@@ -9,6 +9,9 @@ Adafruit_VL6180X tofZ = Adafruit_VL6180X();
 
 void setup() {
   Serial.begin(9600);              // number for ardunio setup
+  
+  //FIXME: add code to change I2C address thing o both sensors work at same time
+  
   while (!Serial)                  // makes sure TOFs connected
   {
   delay(1);
@@ -29,6 +32,7 @@ void setup() {
   Serial.println(F("TOF Testing Start:\n\n"));  // testing start
   tofY.startRangeContinuous();                  // start continuous ranging for YMV
 }
+
 
 void loop() {
   if (tofY.isRangeComplete()) {                 // detect and give Y distance
