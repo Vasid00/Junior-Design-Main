@@ -41,7 +41,7 @@ void loop() {
   }
   
   float lux = tofZ.readLux(VL6180X_ALS_GAIN_5);   // Z setup code
-  Serial.print("Lux: ");                          // TESTME: need to see difference in readlux and readRange functions
+  Serial.print("Lux: ");                          // FIXME/TESTME: need to see difference in readlux and readRange functions
   Serial.println(lux);
   uint8_t range = tofZ.readRange();
   uint8_t status = tofZ.readRangeStatus();
