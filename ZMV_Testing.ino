@@ -4,6 +4,7 @@
 #include <MultiStepper.h>       //Allows the use of multiple steppers
 #include <Adafruit_VL6180X.h>   // Z sensor library
 #include <Wire.h>
+
 #define stepPinZ 3
 #define dirPinZ  2
 #define stopPin 50
@@ -18,6 +19,7 @@
 bool notStoppedZ = true;
 int buttonState = 0;
 int clk = 0;
+
 AccelStepper zMotor(1, stepPinZ, dirPinZ);
 Adafruit_VL6180X tofZ = Adafruit_VL6180X();
 
@@ -25,7 +27,9 @@ Adafruit_VL6180X tofZ = Adafruit_VL6180X();
 void setup(){
   Serial.begin(9600);           //Serial monitoring
   zMotor.setMaxSpeed(500);      //Setting max speed for both to 500 for now
+  
   pinMode(stopPin, INPUT);      //Emergency stop button
+  
   pinMode(stepPinZ, OUTPUT);    //Setting the step/dir pins
   pinMode(dirPinZ, OUTPUT);  
   
@@ -41,18 +45,25 @@ void setup(){
   zMotor.setCurrentPosition(0);
 };
 
+float lux;   //Z setup code
+uint8_t range;
+uint8_t status;
 
 void loop() {
-  float lux = tofZ.readLux(VL6180X_ALS_GAIN_5);   //Z setup code
   Serial.print("Lux: ");                          //FIXME/TESTME: see what Lux is (also in TOF testing)
   Serial.println(lux);
-  uint8_t range = tofZ.readRange();
-  uint8_t status = tofZ.readRangeStatus();
+  
+  lux = tofZ.readLux(VL6180X_ALS_GAIN_5)
+  range = tofZ.readRange();
+  status = tofZ.readRangeStatus();
 
-  if (status == VL6180X_ERROR_NONE) {          //detect and give Z distance
+  if (status == VL6180X_ERROR_NONE){          //detect and give Z distance
     Serial.print(""Distance in Z: ");
     Serial.println(range);
+  }
+
   buttonState = digitalRead(stopPin);          //read the value of the emergency stop pin
+  
   if(buttonState==HIGH)                 //Emergency stop clause
   {
     if(notStopped){                     //Emergency stop serial monitor
@@ -65,6 +76,47 @@ void loop() {
   //FIXME: implement stepper to work with tof
   if(notStopped)
   {
+    
+    //Below is an implementation for tof x stepper testing
+    /*
+      //26.3 steps == 1mm in z movement, thus, by ceiling, 1mm == 27steps
+      const int STEPS_PER_MM = 27; // constant for steps per milimeter 
+      
+      //Needs a constant for motor speed
+      const int MOTOR_SPEED = 1000; //this speed is how many microseconds between coil activation.
+      //If torque is an issue, raise speed by increments of 250
+      
+      //also needs a distToCase variable
+      double distToCase = range - (constant for how much space we need to leave);
+    
+      // This would need a boolean for if the mechanism is ready to grab the case.
+      // This boolean would be supplied from control monitoring of the entire system
+      if(readyToGrabCase){ 
+        //Hardcoded example for stepper control:
+        
+        //Lower to grab the case
+        digitalWrite(dirPinZ, LOW);
+        for(int i=0; i<distToCase * STEPS_PER_MM; i++){
+          digitalWrite(stepPinZ, HIGH);
+          delayMicroseconds(MOTOR_SPEED);
+          digitalWrite(stepPinZ, LOW);
+          delayMicroseconds(MOTOR_SPEED);
+        }
+        
+        //Activate servo motor here
+        //NEEDS SERVO CODE
+        
+        //raise case
+        digitalWrite(dirPinZ, HIGH);
+        for(int i=0; i<distToCase * STEPS_PER_MM; i++){
+          digitalWrite(stepPinZ, HIGH);
+          delayMicroseconds(MOTOR_SPEED);
+          digitalWrite(stepPinZ, LOW);
+          delayMicroseconds(MOTOR_SPEED);
+        }
+        
+      }
+    */
     zMotor.setSpeed(200);
     zMotor.runSpeed();
     if(range <= 75)
