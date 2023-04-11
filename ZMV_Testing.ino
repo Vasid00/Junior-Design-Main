@@ -4,7 +4,6 @@
 #include <MultiStepper.h>       //Allows the use of multiple steppers
 #include <Adafruit_VL6180X.h>   // Z sensor library
 #include <Wire.h>
-
 #define stepPinZ 3
 #define dirPinZ  2
 #define stopPin 50
@@ -16,9 +15,16 @@
 //      - Step = 3
 //      - Direction = 2
 
-bool notStoppedZ = true;
+bool notStopped = true;
+bool readyToGrabCase = true;
 int buttonState = 0;
 int clk = 0;
+float lux;                      //tofZ setup code
+uint8_t range;
+uint8_t status;
+const int STEPS_PER_MM = 27;    // constant for steps per milimeter
+const int MOTOR_SPEED = 1000;   //If torque is an issue, raise speed by increments of 250
+//double distToCase = range - (constant for how much space we need to leave);
 
 AccelStepper zMotor(1, stepPinZ, dirPinZ);
 Adafruit_VL6180X tofZ = Adafruit_VL6180X();
@@ -44,10 +50,6 @@ void setup(){
   }
   zMotor.setCurrentPosition(0);
 };
-
-float lux;   //Z setup code
-uint8_t range;
-uint8_t status;
 
 void loop() {
   Serial.print("Lux: ");                          //FIXME/TESTME: see what Lux is (also in TOF testing)
@@ -77,18 +79,6 @@ void loop() {
   if(notStopped)
   {
     
-    //Below is an implementation for tof x stepper testing
-    /*
-      //26.3 steps == 1mm in z movement, thus, by ceiling, 1mm == 27steps
-      const int STEPS_PER_MM = 27; // constant for steps per milimeter 
-      
-      //Needs a constant for motor speed
-      const int MOTOR_SPEED = 1000; //this speed is how many microseconds between coil activation.
-      //If torque is an issue, raise speed by increments of 250
-      
-      //also needs a distToCase variable
-      double distToCase = range - (constant for how much space we need to leave);
-    
       // This would need a boolean for if the mechanism is ready to grab the case.
       // This boolean would be supplied from control monitoring of the entire system
       if(readyToGrabCase){ 
@@ -102,9 +92,11 @@ void loop() {
           digitalWrite(stepPinZ, LOW);
           delayMicroseconds(MOTOR_SPEED);
         }
-        
+        delay(10);
         //Activate servo motor here
         //NEEDS SERVO CODE
+        delay(10);
+        readyToGrabCase = false;
         
         //raise case
         digitalWrite(dirPinZ, HIGH);
@@ -114,15 +106,6 @@ void loop() {
           digitalWrite(stepPinZ, LOW);
           delayMicroseconds(MOTOR_SPEED);
         }
-        
       }
-    */
-    zMotor.setSpeed(200);
-    zMotor.runSpeed();
-    if(range <= 75)
-    {
-      delay(10);
-      zMotor.setCurrentPosition(0);
-    }
   }
 };
