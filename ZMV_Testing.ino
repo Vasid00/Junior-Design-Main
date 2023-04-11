@@ -19,12 +19,11 @@ bool notStopped = true;
 bool readyToGrabCase = true;
 int buttonState = 0;
 int clk = 0;
-float lux;                      //tofZ setup code
-uint8_t range;
+uint8_t range; //tofZ setup code
 uint8_t status;
 const int STEPS_PER_MM = 27;    // constant for steps per milimeter
 const int MOTOR_SPEED = 1000;   //If torque is an issue, raise speed by increments of 250
-//double distToCase = range - (constant for how much space we need to leave);
+double distToCase = range - (constant for how much space we need to leave);
 
 AccelStepper zMotor(1, stepPinZ, dirPinZ);
 Adafruit_VL6180X tofZ = Adafruit_VL6180X();
@@ -52,10 +51,6 @@ void setup(){
 };
 
 void loop() {
-  Serial.print("Lux: ");                          //FIXME/TESTME: see what Lux is (also in TOF testing)
-  Serial.println(lux);
-  
-  lux = tofZ.readLux(VL6180X_ALS_GAIN_5)
   range = tofZ.readRange();
   status = tofZ.readRangeStatus();
 
@@ -93,9 +88,10 @@ void loop() {
           delayMicroseconds(MOTOR_SPEED);
         }
         delay(10);
+        
         //Activate servo motor here
         //NEEDS SERVO CODE
-        delay(10);
+        delay(1000);
         readyToGrabCase = false;
         
         //raise case
