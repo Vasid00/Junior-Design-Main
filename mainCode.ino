@@ -1,11 +1,3 @@
-//Author: Gideon Davis
-
-
-#include "DefinitionsAndConstants.h"
-#include <Adafruit_VL53L0X.h>      // Y sensor library
-#include <Adafruit_VL6180X.h>      // Z sensor library
-#include <Wire.h>
-#include <Servo.h>
 #include <TFT_HX8357.h>
 
 TFT_HX8357 lcd = TFT_HX8357(); //Call class
@@ -16,36 +8,41 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define AO_BLUE   0x2B15
 #define MAROON    0x7800
 #define DARKGREY  0x7BEF
+#define DARKCYAN  0x03EF
+#define PURPLE    0x780F
+#define OLIVE     0x7BE0
+#define LIGHTGREY 0xC618
+#define GOLD      0xFC0F
 
 //Controls constants
 #define SEL_PIN 2
 #define RET_PIN 3
 #define POT_PIN A0 
 #define BUTTON_NOT_PRESSED 0
-#define SELECT_PRESSED 1
-#define RETURN_PRESSED 2
+#define SELECT_PRESSED     1
+#define RETURN_PRESSED     2
 
 //ScreenStates
 #define SHUTDOWN 0
-#define MENU 1
-#define RUN 2
+#define MENU     1
+#define RUN      2
 #define SETTINGS 3
-#define STATS 4
+#define STATS    4
 
 //Motor Speeds
-#define SPEED_FIVE 750
-#define SPEED_FOUR 1000
+#define SPEED_FIVE  750
+#define SPEED_FOUR  1000
 #define SPEED_THREE 1250
-#define SPEED_TWO 1500
-#define SPEED_ONE 1750
+#define SPEED_TWO   1500
+#define SPEED_ONE   1750
 
 //Indecies
-#define NULL_IDX 0
-#define Z_SPEED_IDX 1
-#define Y_SPEED_IDX 2
-#define CASE_LOC_IDX 3
+#define NULL_IDX       0
+#define Z_SPEED_IDX    1
+#define Y_SPEED_IDX    2
+#define CASE_LOC_IDX   3
 #define PALLET_LOC_IDX 4
-#define CALIBRATE_IDX 5
+#define CALIBRATE_IDX  5
 
 //Controls variables
 bool buttonReady = true;
@@ -54,18 +51,12 @@ int potentValue = 0;
 int buttonState = 0;
 
 //Screen state variables
+bool drawn = false;
 int count = 0;
 int screenState = SHUTDOWN;
 int selLeftX = 0, selLeftY = 0;
 int selRightX = 0, selRightY = 0;
 
-
-//LCD_menu variables
-char str_run[4] = "Run";
-char str_settings[9] = "Settings";
-char str_shutdown[9] = "Shutdown";
-char str_teamX[8] = "Team X";
-char str_robotics[10] = "Packaging";
 
 //Settings variables
 //ArrayVal
@@ -82,19 +73,20 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
 {
   lcd.setTextDatum(MC_DATUM);
   lcd.setTextColor(WHITE, BLACK);
-  
+
   //Shutdown statement
   if(screenState == SHUTDOWN)
   {
-    lcd.drawString("Press", 235, 60, 4);
-    lcd.drawString("Select", 235, 100, 4);
-    lcd.drawString("To", 235, 140, 4);
-    lcd.drawString("Start", 235, 180, 4);
+    lcd.drawString("Press", 235, 80, 4);
+    lcd.drawString("Select", 235, 120, 4);
+    lcd.drawString("To", 235, 160, 4);
+    lcd.drawString("Start", 235, 200, 4);
 
     if(buttonValIn == SELECT_PRESSED)
     {
       lcd.fillScreen(BLACK);
       screenState = MENU;
+      drawn = false;
     }
   }
 
@@ -103,10 +95,81 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
   {
     selRightY = 292;
     selLeftY = 292;
-    //FIXME: Draw art
-    lcd.drawRect(49, 21, 382, 232, WHITE);
-    lcd.drawString(str_teamX, 235, 100, 4);
-    lcd.drawString(str_robotics, 235, 140, 4);
+    //Main Menu Art:
+    if(!drawn)
+    {
+      //Main Menu Art:
+      //OutlineBox
+      lcd.drawRect(30, 20, 420, 230, DARKCYAN);
+      //
+
+      //Header Box
+      lcd.fillRect(30, 20, 420, 40, DARKCYAN);
+
+      //Team Name
+      lcd.setTextColor(WHITE, DARKCYAN);
+      lcd.drawString("Team X Packaging", 240, 40, 4);
+      lcd.setTextColor(WHITE, BLACK);
+      //Outline
+      lcd.drawRect(130, 22, 220, 36, WHITE);
+
+      //Canvas bounds
+      //X: [30 : 450]
+      //Y: [20 + 40(header) : 250]
+
+      //Conveyer Boxes
+      //Right
+      lcd.fillRect(330, 170, 60, 80, DARKCYAN); //X: [330 : 390], Y: [170 : 250]
+      //Left
+      lcd.fillRect(70, 170, 60, 80, DARKCYAN); // X: [70 : 130], Y: [170 : 250]
+
+      //Pallet
+      lcd.fillRect(331, 162, 58, 6, DARKGREY);
+      lcd.drawRect(330, 161, 60, 8, WHITE);
+
+      //Case
+      lcd.fillRect(91, 150, 18, 18, DARKGREY);
+      lcd.drawRect(90, 149, 20, 20, WHITE);
+      
+      //Z Motor
+      lcd.fillRect(120, 70, 15, 15, DARKGREY);
+
+      //Lead Screw
+      lcd.fillRect(125, 85, 5, 60, LIGHTGREY);
+
+      //Guide rods
+      //Left
+      lcd.fillRect(60, 70, 5, 75, DARKGREY);
+      //Right
+      lcd.fillRect(145, 70, 5, 75, DARKGREY);
+
+      //Y rail
+      lcd.fillRect(31, 72, 420, 8, LIGHTGREY);
+      lcd.drawRect(31, 72, 420, 8, DARKGREY);
+
+      //Gripper Holster
+      //Thin box
+      lcd.fillRect(55, 100, 100, 10, WHITE);
+
+      //Servo
+      //Motor
+      lcd.fillRect(82, 110, 38, 10, PURPLE);
+      //Gear
+      lcd.fillCircle(115, 115, 5, GOLD);
+      lcd.drawCircle(115, 115, 5, PURPLE);
+      
+      //Claw
+      //Left
+      lcd.fillRect(84, 120, 5, 40, PURPLE);
+      //Right
+      lcd.fillRect(115, 120, 5, 40, PURPLE);
+      //Claw lip
+      lcd.fillRect(112, 155, 3, 5, PURPLE);
+      
+      drawn = true;
+    //
+    }
+    
     //
     lcd.setTextDatum(MR_DATUM);
       
@@ -114,21 +177,21 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     lcd.drawRect(45, 273, 119, 40, WHITE);
         
     //Spell Run
-    lcd.drawString(str_run, 118, 290, 2);
+    lcd.drawString("Run", 118, 290, 2);
     //
 
     //Settings Button
     lcd.drawRect(182, 273, 119, 40, WHITE);
         
     //Spell Settings
-    lcd.drawString(str_settings, 265, 290, 2);
+    lcd.drawString("Settings", 265, 290, 2);
     //
 
     //ShutDown Button
     lcd.drawRect(319, 273, 119, 40, WHITE);
         
     //Spell Shutdown
-    lcd.drawString(str_shutdown, 402, 290, 2);
+    lcd.drawString("Shutdown", 402, 290, 2);
     //
 
     //Place selection indicator
@@ -146,6 +209,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       {
         lcd.fillScreen(BLACK);
         screenState = SHUTDOWN;
+        drawn = false;
       }
     }
     //Middle
@@ -157,6 +221,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       {
         lcd.fillScreen(BLACK);
         screenState = SETTINGS;
+        drawn = false;
       }
     }
     //Left side
@@ -168,6 +233,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       {
         lcd.fillScreen(BLACK);
         screenState = RUN;
+        drawn = false;
       }
     }
     //Draw new triangles
@@ -180,6 +246,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     if(buttonValIn == RETURN_PRESSED){
       lcd.fillScreen(BLACK);
       screenState = SHUTDOWN;
+      drawn = false;
     }
   }
 
@@ -261,6 +328,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     {
       lcd.fillScreen(BLACK);
       screenState = MENU;
+      drawn = false;
     }
   }
 
@@ -405,6 +473,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     {
       lcd.fillScreen(BLACK);
       screenState = MENU;
+      drawn = false;
     }
   }
 
@@ -413,11 +482,13 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
   {
 
     //Display the stats
-
+    //Needs implemented
+    
     if(buttonValIn != BUTTON_NOT_PRESSED)
     {
       lcd.fillScreen(BLACK);
       screenState = MENU;
+      drawn = false;
     }
   }
   //Error statement
@@ -425,18 +496,23 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
   {
     lcd.fillScreen(BLACK);
     screenState = SHUTDOWN;
+    drawn = false;
   }
 }
 
 //SETTINGS////////////////////////////
+//This functions manages and modifies system parameters based off the input command signal
 void runSettingsSelection(int potentValueIn, int *settingsCommand)
 {
   int tempVal;
   int tempPtX;
   int tempPtY;
+  //Change text to middle center orientation
   lcd.setTextDatum(MC_DATUM);
+  //Change text to white with black background
   lcd.setTextColor(WHITE, BLACK);
-
+  
+  //Change Z motor speed
   if(*settingsCommand == Z_SPEED_IDX)
   {
     
@@ -479,19 +555,20 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
     }
 
   }
+  //Change Y motor speed
   else if(*settingsCommand == Y_SPEED_IDX)
   {
     tempPtY = 130;
     tempPtX = 150;
-    //Cleanup
+    //Cleanup old triangles
     for(int i=0; i<=4; i++)
     {
       lcd.fillTriangle(tempPtX + (i*20), (tempPtY+15), tempPtX + (i*20), (tempPtY-15), (tempPtX+15) + (i*20), tempPtY, BLACK);
     }
 
-
+    //General algorithm to determine what speed to print to screen
     tempVal = floor(potentValueIn/200);
-
+    
     if(tempVal == 0)
     {
       motorSpeedY = SPEED_ONE;
@@ -514,21 +591,25 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
     }
 
     //New triangles
+    //Only adds tempVal amount
     for(int i=0; i<=tempVal; i++)
     {
       lcd.fillTriangle(tempPtX + (i*20), (tempPtY+15), tempPtX + (i*20), (tempPtY-15), (tempPtX+15) + (i*20), tempPtY, MAROON);
     }
   }
+  //Change case location by increments of 1mm bound by left side conveyer
   else if(*settingsCommand == CASE_LOC_IDX)
   {
     //Adjustable by mm
     
   }
+  //Change pallet location by increments of 1mm bound by right side conveyer
   else if(*settingsCommand == PALLET_LOC_IDX)
   {
     //Adjustable by mm
     
   }
+  //Calibrate locations automatically
   else if(*settingsCommand == CALIBRATE_IDX)
   {
     //Run calibration
@@ -647,6 +728,10 @@ void loop() {
       *settingsCommandOut = NULL_IDX;
     }
   }
+
+  //Add calibration state
+
+  //Add main function state
 
   //Lazy debounce solution -> delay it
   delay(100);
