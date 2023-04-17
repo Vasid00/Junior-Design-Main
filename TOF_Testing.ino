@@ -14,14 +14,12 @@ void setup() {
   Serial.begin(9600);              // number for ardunio setup
   Wire.begin();
   
-  //FIXME: add code to change I2C address thing o both sensors work at same time
-  
   while (!Serial)                  // makes sure TOFs connected
   {
   delay(1);
   }
   
-  Serial.println("TOF Sensors testing.");   // test if sensors are connected
+  Serial.println("*** TOF Sensors Testing for Both Y and Z ***");   // test if sensors are connected
   if (!tofY.begin(TOFY_ADDRESS))            // kills code if both are not detected
   {
     Serial.println(F("Failed to find VL53L0X (YMV)"));
@@ -42,15 +40,16 @@ void setup() {
 
 void loop() {
   if (tofY.isRangeComplete()) {                 // detect and give Y distance
-    Serial.print("Distance in Y-: ");
-    Serial.println(tofY.readRange());
+    Serial.print("Distance in Y: ");
+    Serial.print(tofY.readRange());
   }
   
   rangeZ = tofZ.readRange();
   statusZ = tofZ.readRangeStatus();
-  if (status == VL6180X_ERROR_NONE) {          // detect and give Z distance
-    Serial.print(""Distance in Z: ");
-    Serial.println(range);
+  if (statusZ == VL6180X_ERROR_NONE) {          // detect and give Z distance
+    Serial.print("Distance in Z: ");
+    Serial.print(rangeZ);
+    Serial.println();
   }
   delay(1000);
  }
