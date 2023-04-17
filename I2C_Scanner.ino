@@ -38,8 +38,7 @@ void setup()
  
   Serial.begin(9600);
   while (!Serial);             // Leonardo: wait for serial monitor
-  Serial.println("
-I2C Scanner");
+  Serial.println("I2C Scanner");
 }
  
 void loop()
@@ -75,11 +74,9 @@ void loop()
     }    
   }
   if (nDevices == 0)
-    Serial.println("No I2C devices found
-");
+    Serial.println("No I2C devices found");
   else
-    Serial.println("done
-");
+    Serial.println("done");
  
   delay(5000);           // wait 5 seconds for next scan
 } 
