@@ -12,6 +12,7 @@ Adafruit_VL6180X tofZ = Adafruit_VL6180X();
 
 void setup() {
   Serial.begin(9600);              // number for ardunio setup
+  Wire.begin();
   
   //FIXME: add code to change I2C address thing o both sensors work at same time
   
