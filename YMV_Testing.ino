@@ -45,6 +45,8 @@ const int MOTOR_SPEED = 1000;   //If torque is an issue, raise speed by incremen
 double tempVar = 0;
 double distToCase = range - tempVar;    //(constant for how much space we need to leave);
 
+// Min range 9-13mm (pick-up side)
+// Max range 417-435mm (drop-off side)
 
 AccelStepper yMotor(1, stepPinY, dirPinY);
 Adafruit_VL53L0X tofY = Adafruit_VL53L0X();
