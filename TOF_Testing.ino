@@ -33,8 +33,8 @@ void setup() {
   
   Serial.println(F("TOF Testing Start:\n\n"));  // testing start
   tofY.startRangeContinuous();                  // start continuous ranging for YMV
-  uint8_t rangeZ;       //rangeY variable if permissable
-  uint8_t statusZ;
+  //uint8_t rangeZ;       //rangeY variable if permissable
+  //uint8_t statusZ;
   
 }
 
@@ -45,8 +45,8 @@ void loop() {
     Serial.print(tofY.readRange());
   }
   
-  rangeZ = tofZ.readRange();
-  statusZ = tofZ.readRangeStatus();
+  uint8_t rangeZ = tofZ.readRange();
+  uint8_t statusZ = tofZ.readRangeStatus();
   if (statusZ == VL6180X_ERROR_NONE) {          // detect and give Z distance
     Serial.print("   Z: ");
     Serial.print(rangeZ);
