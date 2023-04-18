@@ -1,5 +1,10 @@
+#include <Adafruit_VL6180X.h>
 #include <TFT_HX8357.h>
+#include <string.h>
+#include <Servo.h>
 
+Adafruit_VL6180X zTof = Adafruit_VL6180X();
+Servo gripper;
 TFT_HX8357 lcd = TFT_HX8357(); //Call class
 
 //Colors
@@ -14,13 +19,37 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define LIGHTGREY 0xC618
 #define GOLD      0xFC0F
 
+//Pin values
+#define SEL_PIN   2
+#define RET_PIN   3
+#define YMOT_DIR  4
+#define YMOT_STEP 5
+#define ZMOT_DIR  6
+#define ZMOT_STEP 7
+#define POT_PIN   A0 
+#define SERVO_SIG 10
+
 //Controls constants
-#define SEL_PIN 2
-#define RET_PIN 3
-#define POT_PIN A0 
 #define BUTTON_NOT_PRESSED 0
 #define SELECT_PRESSED     1
 #define RETURN_PRESSED     2
+#define TIME_BETWEEN_CASES
+
+//Servo constants
+#define SERVO_CLOSED 0
+#define SERVO_OPEN   7
+
+//Motor constants
+#define Z_DOWN LOW
+#define Z_UP   HIGH
+#define YDIR_TO_CASE
+#define YDIR_TO_PALLET
+#define DIST_PALLET_TO_CASE
+#define DIST_TO_PALLET_OPTION_1 //far two rows
+#define DIST_TO_PALLET_OPTION_2 //close two rows
+#define Z_DIST_TO_PALLET 
+#define DIST_TO_CASE_1
+#define DIST_TO_CASE_2
 
 //ScreenStates
 #define SHUTDOWN 0
@@ -40,8 +69,6 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define NULL_IDX       0
 #define Z_SPEED_IDX    1
 #define Y_SPEED_IDX    2
-#define CASE_LOC_IDX   3
-#define PALLET_LOC_IDX 4
 #define CALIBRATE_IDX  5
 
 //Controls variables
@@ -57,6 +84,11 @@ int screenState = SHUTDOWN;
 int selLeftX = 0, selLeftY = 0;
 int selRightX = 0, selRightY = 0;
 
+//Stats value
+int casesLoaded;
+int palletsLoaded;
+int clock, clock2;
+double casesPerHour;
 
 //Settings variables
 //ArrayVal
@@ -67,6 +99,13 @@ int caseLocationZ;
 int palletLocationY;
 int palletLocationZ;
 int *settingsCommandOut;
+
+bool bootup;
+
+String tempString;
+
+//Main loop
+int stateIdxCur;
 
 //LCD////////////////////////////
 void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand)
@@ -234,6 +273,10 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
         lcd.fillScreen(BLACK);
         screenState = RUN;
         drawn = false;
+        casesLoaded = 0;
+        casesPerHour = 0;
+        clock = 0;
+        stateIdxCur = 0;
       }
     }
     //Draw new triangles
@@ -253,7 +296,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
   //Run statement
   else if(screenState == RUN)
   {
-    lcd.drawString("Debug Testing", 235, 60, 4);
+    lcd.drawString("Run Test", 235, 60, 4);
     selLeftX = 184;
     selRightX = 299;
 
@@ -265,70 +308,42 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     //Open and close the servo
     //Always display the TOFS on the side
 
-    //Moving the Z motor button
+    //Clock
     lcd.drawRect(182, 120, 119, 40, WHITE);
-    lcd.drawString("Move Z Motor", 242, 140, 2);
+    lcd.drawString("Time passed: ", 242, 140, 2);
+
+    tempString = String(clock);
+
+    lcd.drawString(tempString.c_str(), 303, 140, 2); //x = 303
     //
 
-    //Moving the Y motor button
+    //Cases Loaded
     lcd.drawRect(182, 170, 119, 40, WHITE);
-    lcd.drawString("Move Y Motor", 242, 190, 2);
+    lcd.drawString("Cases loaded: ", 242, 190, 2);
+
+    tempString = String(casesLoaded);
+
+    lcd.drawString(tempString.c_str(), 303, 190, 2);
     //
 
-    //Using the servo button
+    //Cases per hour
     lcd.drawRect(182, 220, 119, 40, WHITE);
-    lcd.drawString("Open/Close Servo", 242, 240, 2);
+    lcd.drawString("Cases/Hour: ", 242, 240, 2);
+    
+    tempString = String(casesPerHour);
+
+    lcd.drawString(tempString.c_str(), 303, 240, 2);
     //
-    //Cursor drawing
-    //Cleanup
-    lcd.fillTriangle(selLeftX, (selLeftY+15), selLeftX, (selLeftY-15), (selLeftX+15), selLeftY, BLACK);
-    lcd.fillTriangle(selRightX, (selRightY+15), selRightX, (selRightY-15), (selRightX-15), selRightY, BLACK);
 
-    //Bottom
-    if(potentValIn < 330)
-    {
-      selLeftY = 240;
-      selRightY = 240;
-      if(buttonValIn == SELECT_PRESSED)
-      {
-        //Move servo
-        *command = 3;
-      }
-    }
-    //Middle
-    else if(potentValIn < 660)
-    {
-      selLeftY = 190;
-      selRightY = 190;
-      if(buttonValIn == SELECT_PRESSED)
-      {
-        *command = 2;
-      }
-    }
-    //Top
-    else if(potentValIn < 1000)
-    {
-      selLeftY = 140;
-      selRightY = 140;
-      if(buttonValIn == SELECT_PRESSED)
-      {
-        *command = 1;
-      }
-    }
-
-    if(buttonValIn == BUTTON_NOT_PRESSED)
-    {
-      *command = 0;
-      lcd.fillTriangle(selLeftX, (selLeftY+15), selLeftX, (selLeftY-15), (selLeftX+15), selLeftY, AO_BLUE);
-      lcd.fillTriangle(selRightX, (selRightY+15), selRightX, (selRightY-15), (selRightX-15), selRightY, AO_BLUE);
-    }
-
-    //Return button
-    if(buttonValIn == RETURN_PRESSED)
+    if((clock >= 3600)&&(buttonValIn == SELECT_PRESSED))
     {
       lcd.fillScreen(BLACK);
-      screenState = MENU;
       drawn = false;
+      screenState = MENU;
+    }
+    if(stateIdxCur != -1)
+    {
+      *command = 1;
     }
   }
 
@@ -390,17 +405,8 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       lcd.fillTriangle(150 + (i*20), (145), 150 + (i*20), (115), (165) + (i*20), (130), DARKGREY);
     }
 
-
-    //Third setting: Case location//
-    lcd.drawRect(20, 160, 120, 40, WHITE);
-    lcd.drawString("Case Location", 80, 180, 2);
-
-    //Fourth setting: Pallet location//
-    lcd.drawRect(20, 210, 120, 40, WHITE);
-    lcd.drawString("Pallet Location", 80, 230, 2);
-
     //Fifth setting: Calibrate positions//
-    lcd.drawRect(20, 260, 120, 40, WHITE);
+    lcd.drawRect(20, 160, 120, 40, WHITE);
     lcd.drawString("Calibrate", 80, 280,2);
 
 
@@ -410,39 +416,18 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     lcd.fillTriangle(selRightX, (selRightY+15), selRightX, (selRightY-15), (selRightX-15), selRightY, BLACK);
 
     //Calibrate
-    if(potentValIn < 200)
+    if(potentValIn < 330)
     {
-      selLeftY = 280;
-      selRightY = 280;
+      selLeftY = 180;
+      selRightY = 180;
       if(buttonValIn == SELECT_PRESSED)
       {
         //1 == true, must be reset after calibration finishes
         *settingsCommand = CALIBRATE_IDX;
       }
     }
-    //Pallet Location
-    else if(potentValIn < 400)
-    {
-      selLeftY = 230;
-      selRightY = 230;
-      if(buttonValIn == SELECT_PRESSED)
-      {
-        //Enter selection
-        *settingsCommand = PALLET_LOC_IDX;
-      }
-    }
-    //Case Location
-    else if(potentValIn < 600)
-    {
-      selLeftY = 180;
-      selRightY = 180;
-      if(buttonValIn == SELECT_PRESSED)
-      {
-        *settingsCommand = CASE_LOC_IDX;
-      }
-    }
     //Motor Y Speed
-    else if(potentValIn < 800)
+    else if(potentValIn < 660)
     {
       selLeftY = 130;
       selRightY = 130;
@@ -482,8 +467,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
   {
 
     //Display the stats
-    //Needs implemented
-    
+
     if(buttonValIn != BUTTON_NOT_PRESSED)
     {
       lcd.fillScreen(BLACK);
@@ -501,18 +485,14 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
 }
 
 //SETTINGS////////////////////////////
-//This functions manages and modifies system parameters based off the input command signal
 void runSettingsSelection(int potentValueIn, int *settingsCommand)
 {
   int tempVal;
   int tempPtX;
   int tempPtY;
-  //Change text to middle center orientation
   lcd.setTextDatum(MC_DATUM);
-  //Change text to white with black background
   lcd.setTextColor(WHITE, BLACK);
-  
-  //Change Z motor speed
+
   if(*settingsCommand == Z_SPEED_IDX)
   {
     
@@ -555,20 +535,19 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
     }
 
   }
-  //Change Y motor speed
   else if(*settingsCommand == Y_SPEED_IDX)
   {
     tempPtY = 130;
     tempPtX = 150;
-    //Cleanup old triangles
+    //Cleanup
     for(int i=0; i<=4; i++)
     {
       lcd.fillTriangle(tempPtX + (i*20), (tempPtY+15), tempPtX + (i*20), (tempPtY-15), (tempPtX+15) + (i*20), tempPtY, BLACK);
     }
 
-    //General algorithm to determine what speed to print to screen
+
     tempVal = floor(potentValueIn/200);
-    
+
     if(tempVal == 0)
     {
       motorSpeedY = SPEED_ONE;
@@ -591,25 +570,11 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
     }
 
     //New triangles
-    //Only adds tempVal amount
     for(int i=0; i<=tempVal; i++)
     {
       lcd.fillTriangle(tempPtX + (i*20), (tempPtY+15), tempPtX + (i*20), (tempPtY-15), (tempPtX+15) + (i*20), tempPtY, MAROON);
     }
   }
-  //Change case location by increments of 1mm bound by left side conveyer
-  else if(*settingsCommand == CASE_LOC_IDX)
-  {
-    //Adjustable by mm
-    
-  }
-  //Change pallet location by increments of 1mm bound by right side conveyer
-  else if(*settingsCommand == PALLET_LOC_IDX)
-  {
-    //Adjustable by mm
-    
-  }
-  //Calibrate locations automatically
   else if(*settingsCommand == CALIBRATE_IDX)
   {
     //Run calibration
@@ -629,6 +594,31 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
 
 }
 
+//MOTORS//////////////////////////////
+void moveZmotor(int steps, int direction)
+{
+  digitalWrite(ZMOT_DIR, direction);
+  for(int i=0; i<steps; i++)
+  {
+    digitalWrite(ZMOT_STEP,LOW);
+    delayMicroseconds(motorSpeedZ);
+    digitalWrite(ZMOT_STEP,HIGH);
+    delayMicroseconds(motorSpeedZ);
+  }
+}
+
+void moveYmotor(int steps, int direction)
+{
+  digitalWrite(YMOT_DIR, direction);
+  for(int i=0; i<steps; i++)
+  {
+    digitalWrite(YMOT_STEP,LOW);
+    delayMicroseconds(motorSpeedY);
+    digitalWrite(YMOT_STEP,HIGH);
+    delayMicroseconds(motorSpeedY);
+  }
+}
+
 //SETUP////////////////////////
 void setup() {
   // put your setup code here, to run once:
@@ -641,9 +631,19 @@ void setup() {
   palletLocationZ = 0;
   palletLocationY = 0;
 
+  palletsLoaded = 0;
+  casesLoaded = 0;
+  casesPerHour = 0;
+  clock = 0;
+
   settingsCommandOut = new int;
   *settingsCommandOut = NULL_IDX;
 
+  stateIdxCur = 0;
+
+  bootup = false;  
+
+  gripper.attach(SERVO_SIG);
   Serial.begin(9600);
 
   //Controls setup
@@ -733,9 +733,221 @@ void loop() {
 
   //Add main function state
 
+
+  //Y starts at case
+
+  //After 8 cases                             17
+  //Detect new pallet                         18
+  
+  //Move Y motor above case side              0 X
+  //Detect if case is there                   1 X
+  //Open gripper                              2 X
+  //Lower Z motor to first case               3 
+  //Close gripper                             4
+  //Raise Z motor                             5
+  //Wait for next case                        6
+  //Lower Z motor to above second case        7
+  //Open gripper                              8
+  //Lower Z motor to second case              9
+  //Closer gripper                            10
+  //Raise Z motor fully                       11
+  //Move Y motor to pallet side               12
+  //Lower to pallet                           13
+  //Open gripper                              14
+  //Raise Z motor fully                       15
+  //Increment casesLoaded by 2                16
+  //if casesLoaded == 8 go to special case    17
+  //else Repeat                               17
+
+  //Main loop
+  if(*commandOut == 1)
+  {
+    //Cycle 0 - Move above case
+    if(stateIdxCur == 0)
+    {
+      if(!bootup)
+      {
+        bootup = true;
+      }
+      else
+      {
+        moveYmotor(DIST_PALLET_TO_CASE, YDIR_TO_CASE);
+      }
+    }
+    
+    //Cycle 1 - Check if case is under gripper
+    else if(stateIdxCur == 1)
+    {
+      bool casePresent = false;
+      while(!casePresent)
+      {
+        if(zTof.readRange() <= caseLocationZ-1)
+        {
+          casePresent = true;
+        }
+      }
+      
+    }
+    
+    //Cycle 2 - Open gripper
+    else if(stateIdxCur == 2)
+    {
+      gripper.write(SERVO_OPEN);
+    }
+    
+    //Cycle 3 - Lower to case 1
+    else if(stateIdxCur == 3)
+    {
+      moveZmotor(DIST_TO_CASE_1, DOWN);
+    }
+    
+    //Cycle 4 - Close gripper
+    else if(stateIdxCur == 4)
+    {
+      gripper.write(SERVO_CLOSED);
+    }
+    
+    //Cycle 5 - Lift Z
+    else if(stateIdxCur == 5)
+    {
+      moveZmotor(DIST_TO_CASE_1, UP);
+    }
+    
+    //Cycle 6 - wait for next case
+    else if(stateIdxCur == 6)
+    {
+      delay(TIME_BETWEEN_CASES);
+    }
+    
+    //Cycle 7 - Lower Z to second case
+    else if(stateIdxCur == 7)
+    {
+      moveZmotor(DIST_TO_CASE_2, DOWN);
+    }
+    
+    //Cycle 8 - open gripper
+    else if(stateIdxCur == 8)
+    {
+      gripper.write(SERVO_OPEN);
+    }
+    
+    //Cycle 9 - lower Z to first case location
+    else if(stateIdxCur == 9)
+    {
+      moveZmotor(DIST_TO_CASE_1 - DIST_TO_CASE_2, DOWN);
+    }
+    
+    //Cycle 10 - close gripper
+    else if(stateIdxCur == 10)
+    {
+      gripper.write(SERVO_CLOSED);
+    }
+    
+    //Cycle 11 - raise Z
+    else if(stateIdxCur == 11)
+    {
+      moveZmotor(DIST_TO_CASE_1, UP);
+    }
+    
+    //Cycle 12 - Move y motor
+    else if(stateIdxCur == 12)
+    {
+      if((casesLoaded == 0)||
+         (casesLoaded == 4)
+      {
+        moveYmotor(DIST_TO_PALLET_OPTION_1, DIR_TO_PALLET); //Far two rows
+      }
+      else if((casesLoaded == 2)||
+              (casesLoaded == 6)
+      {
+        moveYmotor(DIST_TO_PALLET_OPTION_2, DIR_TO_PALLET); //Close two rows
+      }
+      
+    }
+    
+    //Cycle 13 - Lower Z
+    else if(stateIdxCur == 13)
+    {
+      moveZmotor(Z_DIST_TO_PALLET, DOWN);
+    }
+    
+    //Cycle 14 - open gripper
+    else if(stateIdxCur == 14)
+    {
+      gripper.write(SERVO_OPEN);
+    }
+    
+    //Cycle 15 - raise Z
+    else if(stateIdxCur == 15)
+    {
+      moveZmotor(Z_DIST_TO_PALLET, UP);
+    }
+    
+    //Cycle 16 - increment cases
+    else if(stateIdxCur == 16)
+    {
+      casesLoaded += 2;
+    }
+    
+    //Cycle 17 - check case amount
+    else if(stateIdxCur == 17)
+    {
+      if(casesLoaded >= 8)
+      {
+        casesLoaded = 0;
+        palletsLoaded++;
+      }
+      else
+      {
+        stateIdxCur = 0;
+      }
+    }
+    
+    //Cycle 18 - check for pallet
+    else if(stateIdxCur == 18)
+    {
+      bool palletPresent = false;
+      while(!palletPresent)
+      {
+        if(zTof.readRange() <= palletLocationZ - 1)
+        {
+          palletPresent = true;
+        }
+      }
+    }
+    
+    //Cycle 19 - 
+    else if(stateIdxCur == 19)
+    {
+      stateIdxCur = 0;
+    }
+
+
+    //Null Cycle
+    else
+    {
+      stateIdxCur = -99;
+      *commandOut == 0;
+    }
+    if(stateIdxCur != -99)
+    {
+      stateIdxCur++;
+    }
+  }
+
   //Lazy debounce solution -> delay it
   delay(100);
-
+  clock2++;
+  if(clock2 >= 10)
+  {
+    clock2 = 0;
+    clock++;
+  }
+  if(clock >= 3600)
+  {
+    clock2 = 0;
+    clock = 0;
+  }
   //Memory freeing
   delete commandOut;
 }
