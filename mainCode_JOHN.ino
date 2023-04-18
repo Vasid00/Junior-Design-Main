@@ -45,11 +45,11 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define YDIR_TO_CASE HIGH  // High from YMV_Testing_JOHN
 #define YDIR_TO_PALLET LOW // Low from YMV_Testing_JOHN
 #define DIST_PALLET_TO_CASE 1639 // Calculated to go 14.5 inches
-#define DIST_TO_PALLET_OPTION_1 100//far two rows
-#define DIST_TO_PALLET_OPTION_2 200//close two rows
+#define DIST_TO_PALLET_OPTION_1 100//far two rows ; random numbers
+#define DIST_TO_PALLET_OPTION_2 200//close two rows ; random numbers
 #define Z_DIST_TO_PALLET 2300 // Calculated to go 3.65625 inches
-#define DIST_TO_CASE_1 100
-#define DIST_TO_CASE_2 200
+#define DIST_TO_CASE_1 100  // Random number
+#define DIST_TO_CASE_2 200  // Random number
 
 //ScreenStates
 #define SHUTDOWN 0
