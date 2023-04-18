@@ -27,9 +27,9 @@ int clk = 0;
 //uint8_t range; //tofZ setup code
 //uint8_t status;
 const int STEPS_PER_MM = 27;    // constant for steps per milimeter
-const int MOTOR_SPEED = 10000;   //If torque is an issue, raise speed by increments of 250
+const int MOTOR_SPEED = 4000;   //If torque is an issue, raise speed by increments of 250
 double tempVar = 0;
-double distToCase = 200 - tempVar;    //(constant for how much space we need to leave);
+double distToCase = 20 - tempVar;    //(constant for how much space we need to leave);
 
 // Min range 9-13mm (pick-up side)
 // Max range 417-435mm (drop-off side)
