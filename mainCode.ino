@@ -33,23 +33,25 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define BUTTON_NOT_PRESSED 0
 #define SELECT_PRESSED     1
 #define RETURN_PRESSED     2
-#define TIME_BETWEEN_CASES
+#define TIME_BETWEEN_CASES 2000 //Time between when each case is available for pickup //FIXME!!!
 
 //Servo constants
-#define SERVO_CLOSED 0
-#define SERVO_OPEN   7
+#define SERVO_CLOSED 8
+#define SERVO_OPEN   0
 
 //Motor constants
-#define Z_DOWN LOW
-#define Z_UP   HIGH
-#define YDIR_TO_CASE
-#define YDIR_TO_PALLET
-#define DIST_PALLET_TO_CASE
-#define DIST_TO_PALLET_OPTION_1 //far two rows
-#define DIST_TO_PALLET_OPTION_2 //close two rows
-#define Z_DIST_TO_PALLET 
-#define DIST_TO_CASE_1
-#define DIST_TO_CASE_2
+#define DOWN LOW
+#define UP   HIGH
+#define YDIR_TO_CASE HIGH
+#define YDIR_TO_PALLET LOW
+
+//Distance constants
+#define DIST_PALLET_TO_CASE 1600                     //FIXME!!!
+#define DIST_TO_PALLET_OPTION_1 1600//far two rows   //FIXME!!!
+#define DIST_TO_PALLET_OPTION_2 1500//close two rows //FIXME!!!
+#define Z_DIST_TO_PALLET 1200                        //FIXME!!!
+#define DIST_TO_CASE_1 1000 //Z distance             //FIXME!!!
+#define DIST_TO_CASE_2 700  //Z distance             //FIXME!!!
 
 //ScreenStates
 #define SHUTDOWN 0
@@ -81,6 +83,8 @@ int buttonState = 0;
 bool drawn = false;
 int count = 0;
 int screenState = SHUTDOWN;
+
+//Selection variables
 int selLeftX = 0, selLeftY = 0;
 int selRightX = 0, selRightY = 0;
 
@@ -99,8 +103,11 @@ int caseLocationZ;
 int palletLocationY;
 int palletLocationZ;
 int *settingsCommandOut;
+int *commandOut;
 
+//State variables
 bool bootup;
+bool oddIndex;
 
 String tempString;
 
@@ -264,7 +271,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       }
     }
     //Left side
-    else
+    else if(potentValIn < 1000)
     {
       selLeftX = 47;
       selRightX = 162;
@@ -341,9 +348,13 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
       drawn = false;
       screenState = MENU;
     }
-    if(stateIdxCur != -1)
+    if(stateIdxCur != -99)
     {
       *command = 1;
+    }
+    else
+    {
+      *command = 0;
     }
   }
 
@@ -399,7 +410,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     lcd.drawRect(20, 110, 120, 40, WHITE);
     lcd.drawString("Y Motor Speed", 80, 130, 2);
     //Current Value
-    temp = 7 - ((motorSpeedY/250));
+    temp = 7 - (((motorSpeedY-2250)/250));
     for(int i=0; i<=temp; i++)
     {
       lcd.fillTriangle(150 + (i*20), (145), 150 + (i*20), (115), (165) + (i*20), (130), DARKGREY);
@@ -407,7 +418,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
 
     //Fifth setting: Calibrate positions//
     lcd.drawRect(20, 160, 120, 40, WHITE);
-    lcd.drawString("Calibrate", 80, 280,2);
+    lcd.drawString("Calibrate", 80, 180,2);
 
 
     //Draw cursor//
@@ -550,23 +561,23 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
 
     if(tempVal == 0)
     {
-      motorSpeedY = SPEED_ONE;
+      motorSpeedY = SPEED_ONE + 2250;
     }
     else if(tempVal == 1)
     {
-      motorSpeedY = SPEED_TWO;
+      motorSpeedY = SPEED_TWO + 2250;
     }
     else if(tempVal == 2)
     {
-      motorSpeedY = SPEED_THREE;
+      motorSpeedY = SPEED_THREE + 2250;
     }
     else if(tempVal == 3)
     {
-      motorSpeedY = SPEED_FOUR;
+      motorSpeedY = SPEED_FOUR + 2250;
     }
     else if(tempVal == 4)
     {
-      motorSpeedY = SPEED_FIVE;
+      motorSpeedY = SPEED_FIVE + 2250;
     }
 
     //New triangles
@@ -609,14 +620,18 @@ void moveZmotor(int steps, int direction)
 
 void moveYmotor(int steps, int direction)
 {
+  
   digitalWrite(YMOT_DIR, direction);
+  Serial.println("Test");
   for(int i=0; i<steps; i++)
   {
+    
     digitalWrite(YMOT_STEP,LOW);
     delayMicroseconds(motorSpeedY);
     digitalWrite(YMOT_STEP,HIGH);
     delayMicroseconds(motorSpeedY);
   }
+  Serial.println("Test2");
 }
 
 //SETUP////////////////////////
@@ -624,8 +639,9 @@ void setup() {
   // put your setup code here, to run once:
 
   //Initial Values
+  screenState = SHUTDOWN;
   motorSpeedZ = SPEED_ONE;
-  motorSpeedY = SPEED_ONE;
+  motorSpeedY = SPEED_ONE + 2250;
   caseLocationZ = 0;
   caseLocationY = 0;
   palletLocationZ = 0;
@@ -638,12 +654,16 @@ void setup() {
 
   settingsCommandOut = new int;
   *settingsCommandOut = NULL_IDX;
-
-  stateIdxCur = 0;
+  commandOut = new int;
+  *commandOut = -99;
+  stateIdxCur = -99;
 
   bootup = false;  
 
   gripper.attach(SERVO_SIG);
+  gripper.write(SERVO_OPEN);
+  delay(10);
+  gripper.write(SERVO_CLOSED);
   Serial.begin(9600);
 
   //Controls setup
@@ -651,21 +671,29 @@ void setup() {
   pinMode(RET_PIN, INPUT);
   pinMode(POT_PIN, INPUT);
 
+  //Motors
+  pinMode(YMOT_STEP, OUTPUT);
+  pinMode(YMOT_DIR, OUTPUT);
+  pinMode(ZMOT_STEP, OUTPUT);
+  pinMode(ZMOT_DIR, OUTPUT);
+
   //LCD setup
   lcd.init();
   lcd.begin();
   lcd.fillScreen(BLACK);
-  lcd.setRotation(1);
+  lcd.setRotation(3);
 }
 
 //LOOP/////////////////////////
 void loop() {
   //Memory allocation for memory heavy commands
-  int *commandOut = new int;
   //Read potentiometer value
+  Serial.println("Test3");
   potentValue = analogRead(POT_PIN);
   //Serial Debugging
+  Serial.println("Test4");
   Serial.print("Potentiometer Value: ");
+  Serial.println("Test5");
   Serial.print(potentValue);
 
   //Serial debugging
@@ -717,7 +745,7 @@ void loop() {
   {
     runLCD(buttonState, potentValue, commandOut, settingsCommandOut);
   }
-
+  
   if((*settingsCommandOut != NULL_IDX))
   {
     runSettingsSelection(analogRead(POT_PIN), settingsCommandOut);
@@ -763,11 +791,13 @@ void loop() {
   if(*commandOut == 1)
   {
     //Cycle 0 - Move above case
+    
     if(stateIdxCur == 0)
     {
-      if(!bootup)
+      Serial.println("Cycle 1");
+      if(oddIndex)
       {
-        bootup = true;
+        moveYmotor(DIST_PALLET_TO_CASE-100, YDIR_TO_CASE);
       }
       else
       {
@@ -778,9 +808,11 @@ void loop() {
     //Cycle 1 - Check if case is under gripper
     else if(stateIdxCur == 1)
     {
-      bool casePresent = false;
+      Serial.println("Cycle 2");
+      bool casePresent = true;
       while(!casePresent)
       {
+        casePresent = true;
         if(zTof.readRange() <= caseLocationZ-1)
         {
           casePresent = true;
@@ -792,75 +824,84 @@ void loop() {
     //Cycle 2 - Open gripper
     else if(stateIdxCur == 2)
     {
+      Serial.println("Cycle 3");
       gripper.write(SERVO_OPEN);
     }
     
     //Cycle 3 - Lower to case 1
     else if(stateIdxCur == 3)
     {
+      Serial.println("Cycle 4");
       moveZmotor(DIST_TO_CASE_1, DOWN);
     }
     
     //Cycle 4 - Close gripper
     else if(stateIdxCur == 4)
     {
+      Serial.println("Cycle 5");
       gripper.write(SERVO_CLOSED);
     }
     
     //Cycle 5 - Lift Z
     else if(stateIdxCur == 5)
     {
+      Serial.println("Cycle 6");
       moveZmotor(DIST_TO_CASE_1, UP);
     }
     
     //Cycle 6 - wait for next case
     else if(stateIdxCur == 6)
     {
+      Serial.println("Cycle 7");
       delay(TIME_BETWEEN_CASES);
     }
     
     //Cycle 7 - Lower Z to second case
     else if(stateIdxCur == 7)
     {
+      Serial.println("Cycle 8");
       moveZmotor(DIST_TO_CASE_2, DOWN);
     }
     
     //Cycle 8 - open gripper
     else if(stateIdxCur == 8)
     {
+      Serial.println("Cycle 9");
       gripper.write(SERVO_OPEN);
     }
     
     //Cycle 9 - lower Z to first case location
     else if(stateIdxCur == 9)
     {
+      Serial.println("Cycle 10");
       moveZmotor(DIST_TO_CASE_1 - DIST_TO_CASE_2, DOWN);
     }
     
     //Cycle 10 - close gripper
     else if(stateIdxCur == 10)
     {
+      Serial.println("Cycle 11");
       gripper.write(SERVO_CLOSED);
     }
     
     //Cycle 11 - raise Z
     else if(stateIdxCur == 11)
     {
+      Serial.println("Cycle 12");
       moveZmotor(DIST_TO_CASE_1, UP);
     }
     
     //Cycle 12 - Move y motor
     else if(stateIdxCur == 12)
     {
-      if((casesLoaded == 0)||
-         (casesLoaded == 4)
+      Serial.println("Cycle 13");
+      if(!oddIndex)
       {
-        moveYmotor(DIST_TO_PALLET_OPTION_1, DIR_TO_PALLET); //Far two rows
+        moveYmotor(DIST_TO_PALLET_OPTION_1, YDIR_TO_PALLET); //Far two rows
       }
-      else if((casesLoaded == 2)||
-              (casesLoaded == 6)
+      else if(oddIndex)
       {
-        moveYmotor(DIST_TO_PALLET_OPTION_2, DIR_TO_PALLET); //Close two rows
+        moveYmotor(DIST_TO_PALLET_OPTION_2, YDIR_TO_PALLET); //Close two rows
       }
       
     }
@@ -868,30 +909,41 @@ void loop() {
     //Cycle 13 - Lower Z
     else if(stateIdxCur == 13)
     {
+      Serial.println("Cycle 14");
       moveZmotor(Z_DIST_TO_PALLET, DOWN);
     }
     
     //Cycle 14 - open gripper
     else if(stateIdxCur == 14)
     {
+      Serial.println("Cycle 15");
       gripper.write(SERVO_OPEN);
     }
     
     //Cycle 15 - raise Z
     else if(stateIdxCur == 15)
     {
+      Serial.println("Cycle 16");
       moveZmotor(Z_DIST_TO_PALLET, UP);
+      //FIXME move y motor just barely to be at the starting location
+      //starting position should be the distance from the cases to the pallet moved in cycle 0
+
     }
     
     //Cycle 16 - increment cases
     else if(stateIdxCur == 16)
     {
+      Serial.println("Cycle 17");
       casesLoaded += 2;
+
+      if((casesLoaded == 2)||(casesLoaded == 6)) oddIndex = true;
+      else oddIndex = false;
     }
     
     //Cycle 17 - check case amount
     else if(stateIdxCur == 17)
     {
+      Serial.println("Cycle 18");
       if(casesLoaded >= 8)
       {
         casesLoaded = 0;
@@ -899,26 +951,28 @@ void loop() {
       }
       else
       {
-        stateIdxCur = 0;
+        stateIdxCur = -1;
       }
     }
     
     //Cycle 18 - check for pallet
     else if(stateIdxCur == 18)
     {
+      Serial.println("Cycle 19");
       bool palletPresent = false;
       while(!palletPresent)
       {
         if(zTof.readRange() <= palletLocationZ - 1)
         {
           palletPresent = true;
-        }
+        }        
       }
     }
     
     //Cycle 19 - 
     else if(stateIdxCur == 19)
     {
+      Serial.println("Cycle 20");
       stateIdxCur = 0;
     }
 
@@ -929,25 +983,19 @@ void loop() {
       stateIdxCur = -99;
       *commandOut == 0;
     }
-    if(stateIdxCur != -99)
+    if((stateIdxCur != -99 ))
     {
       stateIdxCur++;
+    }
+  
+    clock2++;
+    if(clock2 >= 2)
+    {
+      clock2 = 0;
+      clock++;
     }
   }
 
   //Lazy debounce solution -> delay it
   delay(100);
-  clock2++;
-  if(clock2 >= 10)
-  {
-    clock2 = 0;
-    clock++;
-  }
-  if(clock >= 3600)
-  {
-    clock2 = 0;
-    clock = 0;
-  }
-  //Memory freeing
-  delete commandOut;
 }
