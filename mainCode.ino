@@ -1,4 +1,5 @@
 #include <Adafruit_VL6180X.h>
+#include <Wire.h>
 #include <TFT_HX8357.h>
 #include <string.h>
 #include <Servo.h>
@@ -33,10 +34,11 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define BUTTON_NOT_PRESSED 0
 #define SELECT_PRESSED     1
 #define RETURN_PRESSED     2
-#define TIME_BETWEEN_CASES 2000 //Time between when each case is available for pickup //FIXME!!!
+#define TIME_BETWEEN_CASES 20000 //Time between when each case is available for pickup 
+#define TIME_BETWEEN_PALLETS 2500
 
 //Servo constants
-#define SERVO_CLOSED 8
+#define SERVO_CLOSED 16
 #define SERVO_OPEN   0
 
 //Motor constants
@@ -45,13 +47,17 @@ TFT_HX8357 lcd = TFT_HX8357(); //Call class
 #define YDIR_TO_CASE HIGH
 #define YDIR_TO_PALLET LOW
 
+//29.5 steps per mm
 //Distance constants
-#define DIST_PALLET_TO_CASE 1600                     //FIXME!!!
-#define DIST_TO_PALLET_OPTION_1 1600//far two rows   //FIXME!!!
-#define DIST_TO_PALLET_OPTION_2 1500//close two rows //FIXME!!!
-#define Z_DIST_TO_PALLET 1200                        //FIXME!!!
-#define DIST_TO_CASE_1 1000 //Z distance             //FIXME!!!
-#define DIST_TO_CASE_2 700  //Z distance             //FIXME!!!
+#define DIST_PALLET_TO_CASE 1650                     //13.5" inches from position 2
+#define DIST_TO_PALLET_OPTION_1 1900//far two rows   //15.5" from case
+#define DIST_TO_PALLET_OPTION_2 1650//close two rows //13.5" from case
+#define Z_DIST_TO_PALLET 600                        //1.75"
+#define DIST_TO_CASE_1 1020 //Z distance            
+#define DIST_TO_CASE_2 75  //Z distance             
+
+#define PALLET_TOF_CONSTANT 75
+#define CASE_TOF_CONSTANT 75
 
 //ScreenStates
 #define SHUTDOWN 0
@@ -90,6 +96,7 @@ int selRightX = 0, selRightY = 0;
 
 //Stats value
 int casesLoaded;
+int casesTotal;
 int palletsLoaded;
 int clock, clock2;
 double casesPerHour;
@@ -317,16 +324,16 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
 
     //Clock
     lcd.drawRect(182, 120, 119, 40, WHITE);
-    lcd.drawString("Time passed: ", 242, 140, 2);
+    lcd.drawString("Pallets Loaded: ", 242, 140, 2);
 
-    tempString = String(clock);
+    tempString = String(palletsLoaded);
 
     lcd.drawString(tempString.c_str(), 303, 140, 2); //x = 303
     //
 
     //Cases Loaded
     lcd.drawRect(182, 170, 119, 40, WHITE);
-    lcd.drawString("Cases loaded: ", 242, 190, 2);
+    lcd.drawString("Cases Loaded: ", 242, 190, 2);
 
     tempString = String(casesLoaded);
 
@@ -335,9 +342,9 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
 
     //Cases per hour
     lcd.drawRect(182, 220, 119, 40, WHITE);
-    lcd.drawString("Cases/Hour: ", 242, 240, 2);
+    lcd.drawString("Cases Total: ", 242, 240, 2);
     
-    tempString = String(casesPerHour);
+    tempString = String(casesTotal);
 
     lcd.drawString(tempString.c_str(), 303, 240, 2);
     //
@@ -494,7 +501,7 @@ void runLCD(int buttonValIn, int potentValIn, int *command, int *settingsCommand
     drawn = false;
   }
 }
-
+ 
 //SETTINGS////////////////////////////
 void runSettingsSelection(int potentValueIn, int *settingsCommand)
 {
@@ -597,6 +604,7 @@ void runSettingsSelection(int potentValueIn, int *settingsCommand)
     //    Updates internal parameters
     //    Determines if 2 cases is possible
     Serial.println("FIXME: Implement calibration");
+    lcd.drawString("No", 250, 250, 4);
   }
   else
   {
@@ -640,8 +648,8 @@ void setup() {
 
   //Initial Values
   screenState = SHUTDOWN;
-  motorSpeedZ = SPEED_ONE;
-  motorSpeedY = SPEED_ONE + 2250;
+  motorSpeedZ = SPEED_FIVE;
+  motorSpeedY = SPEED_FIVE + 2250;
   caseLocationZ = 0;
   caseLocationY = 0;
   palletLocationZ = 0;
@@ -649,6 +657,7 @@ void setup() {
 
   palletsLoaded = 0;
   casesLoaded = 0;
+  casesTotal = 0;
   casesPerHour = 0;
   clock = 0;
 
@@ -660,10 +669,15 @@ void setup() {
 
   bootup = false;  
 
+  //Tof
+  Wire.begin();
+  zTof.begin();
+
+  //Servo
   gripper.attach(SERVO_SIG);
   gripper.write(SERVO_OPEN);
   delay(10);
-  gripper.write(SERVO_CLOSED);
+  gripper.write(SERVO_OPEN);
   Serial.begin(9600);
 
   //Controls setup
@@ -687,18 +701,15 @@ void setup() {
 //LOOP/////////////////////////
 void loop() {
   //Memory allocation for memory heavy commands
+
   //Read potentiometer value
-  Serial.println("Test3");
   potentValue = analogRead(POT_PIN);
   //Serial Debugging
-  Serial.println("Test4");
   Serial.print("Potentiometer Value: ");
-  Serial.println("Test5");
   Serial.print(potentValue);
 
   //Serial debugging
   Serial.print(", Button State: ");
-
   
   //Value passing and button reading
   if(buttonReady){
@@ -757,6 +768,9 @@ void loop() {
     }
   }
 
+  //Serial.print("TOF READING: ");
+  //Serial.println(zTof.readRange());
+
   //Add calibration state
 
   //Add main function state
@@ -797,11 +811,11 @@ void loop() {
       Serial.println("Cycle 1");
       if(oddIndex)
       {
-        moveYmotor(DIST_PALLET_TO_CASE-100, YDIR_TO_CASE);
+        moveYmotor(DIST_TO_PALLET_OPTION_1, YDIR_TO_CASE);
       }
       else
       {
-        moveYmotor(DIST_PALLET_TO_CASE, YDIR_TO_CASE);
+        moveYmotor(DIST_TO_PALLET_OPTION_2, YDIR_TO_CASE);
       }
     }
     
@@ -809,15 +823,8 @@ void loop() {
     else if(stateIdxCur == 1)
     {
       Serial.println("Cycle 2");
-      bool casePresent = true;
-      while(!casePresent)
-      {
-        casePresent = true;
-        if(zTof.readRange() <= caseLocationZ-1)
-        {
-          casePresent = true;
-        }
-      }
+      bool casePresent = false;
+      delay(5000);
       
     }
     
@@ -868,13 +875,14 @@ void loop() {
     {
       Serial.println("Cycle 9");
       gripper.write(SERVO_OPEN);
+      delay(500);
     }
     
     //Cycle 9 - lower Z to first case location
     else if(stateIdxCur == 9)
     {
       Serial.println("Cycle 10");
-      moveZmotor(DIST_TO_CASE_1 - DIST_TO_CASE_2, DOWN);
+      moveZmotor(DIST_TO_CASE_1 - DIST_TO_CASE_2-250, DOWN);
     }
     
     //Cycle 10 - close gripper
@@ -888,7 +896,7 @@ void loop() {
     else if(stateIdxCur == 11)
     {
       Serial.println("Cycle 12");
-      moveZmotor(DIST_TO_CASE_1, UP);
+      moveZmotor(DIST_TO_CASE_1-250, UP);
     }
     
     //Cycle 12 - Move y motor
@@ -935,6 +943,7 @@ void loop() {
     {
       Serial.println("Cycle 17");
       casesLoaded += 2;
+      casesTotal += 2;
 
       if((casesLoaded == 2)||(casesLoaded == 6)) oddIndex = true;
       else oddIndex = false;
@@ -960,28 +969,22 @@ void loop() {
     {
       Serial.println("Cycle 19");
       bool palletPresent = false;
-      while(!palletPresent)
-      {
-        if(zTof.readRange() <= palletLocationZ - 1)
-        {
-          palletPresent = true;
-        }        
-      }
+      delay(TIME_BETWEEN_PALLETS);
+      palletPresent = true;
     }
     
     //Cycle 19 - 
     else if(stateIdxCur == 19)
     {
       Serial.println("Cycle 20");
-      stateIdxCur = 0;
+      stateIdxCur = -1;
     }
 
 
     //Null Cycle
     else
     {
-      stateIdxCur = -99;
-      *commandOut == 0;
+      stateIdxCur = 0;
     }
     if((stateIdxCur != -99 ))
     {
